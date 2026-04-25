@@ -1,0 +1,130 @@
+// Digitaleconomy.cloud - polymorphic digital asset platform schema.
+// Local dev uses SQLite; for production switch the provider to "postgresql"
+// and update DATABASE_URL.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String        @id @default(cuid())
+  email                  String        @unique
+  passwordHash           String?
+  name                   String?
+  role                   String        @default("user") // "user" | "admin"
+  custodialWalletAddress String?
+  linkedWalletAddress    String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  orders                 Order[]
+  entitlements           Entitlement[]
+  adminActions           AdminAction[]
+}
+
+// Polymorphic Asset row. The `kind` discriminator tells the dispatcher which
+// fulfillment handler to use; per-kind specifics live in `deliveryConfig` JSON.
+model Asset {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  description   String
+  category      String
+  tagsCsv       String   @default("") // SQLite has no array; CSV for v1
+  priceUsdCents Int
+  kind          String   // "file" | "nft_native" | "stream" | "license_key" | "ai_asset" | "bundle"
+  previewUrl    String?
+  creatorName   String
+  license       String   @default("personal")
+  status        String   @default("published") // "draft" | "published" | "takedown"
+
+  // Per-kind config; shape validated in src/types/delivery.ts via Zod.
+  // Examples:
+  //   file        -> { fileKey, fileSizeBytes, mimeType }
+  //   nft_native  -> { contractAddress, tokenStandard, maxSupply, metadataUri, tokenIdSeed }
+  //   stream      -> { playbackId, drm }
+  //   license_key -> { keyPoolId, activationEndpoint }
+  //   ai_asset    -> { fileKey, usageScopes }
+  deliveryConfig String // JSON-encoded; SQLite-friendly. Postgres can use Json.
+
+  // ReceiptNFT mapping (null for kind="nft_native" because the NFT IS the asset).
+  receiptTokenId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders       Order[]
+  entitlements Entitlement[]
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  userId            String
+  assetId           String
+  paymentRail       String   // "stripe" | "crypto"
+  amountUsdCents    Int
+  stripeSessionId   String?
+  cryptoTxHash      String?
+  fulfillmentTxHash String?  // mint or transfer tx (if any)
+  status            String   @default("pending") // "pending" | "paid" | "fulfilled" | "refunded" | "failed"
+  errorMessage      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id])
+  asset       Asset        @relation(fields: [assetId], references: [id])
+  entitlement Entitlement?
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([status])
+}
+
+// Universal "what does this user own" record across all asset kinds.
+model Entitlement {
+  id         String    @id @default(cuid())
+  userId     String
+  assetId    String
+  orderId    String    @unique
+  kind       String    // mirrors asset.kind
+  grantedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+
+  user           User            @relation(fields: [userId], references: [id])
+  asset          Asset           @relation(fields: [assetId], references: [id])
+  order          Order           @relation(fields: [orderId], references: [id])
+  downloadGrant  DownloadGrant?
+
+  @@index([userId])
+  @@index([assetId])
+}
+
+// Specialization of Entitlement for kind="file" downloads.
+model DownloadGrant {
+  id              String   @id @default(cuid())
+  entitlementId   String   @unique
+  expiresAt       DateTime
+  downloadCount   Int      @default(0)
+  maxDownloads    Int      @default(50)
+
+  entitlement Entitlement @relation(fields: [entitlementId], references: [id])
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  adminUserId String
+  type        String   // "takedown" | "refund" | "note"
+  targetId    String
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  admin User @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId])
+  @@index([targetId])
+}

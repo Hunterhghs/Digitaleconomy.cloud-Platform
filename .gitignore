@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+dist
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+next-env.d.ts
+prisma/dev.db
+prisma/dev.db-journal
+storage/local/*
+!storage/local/.keep
+.DS_Store
+.vercel
