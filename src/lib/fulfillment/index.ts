@@ -22,10 +22,9 @@ export function getHandler(kind: string): FulfillmentHandler {
   return HANDLERS[kind as AssetKind];
 }
 
-// dispatch() is called by both the Stripe webhook handler (after a fiat
-// payment is confirmed) and the crypto checkout endpoint (after an on-chain
-// payment is confirmed). It is idempotent: re-running for an already-fulfilled
-// order is a no-op.
+// dispatch() is called from /api/claim (free model) and - when payment rails
+// come back - from the Stripe webhook + crypto checkout. Idempotent: re-running
+// for an already-fulfilled order is a no-op.
 export async function dispatch(orderId: string): Promise<FulfillmentResult | null> {
   const order = await db.order.findUnique({
     where: { id: orderId },

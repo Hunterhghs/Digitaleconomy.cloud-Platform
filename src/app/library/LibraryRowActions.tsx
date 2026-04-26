@@ -1,16 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { explorerTxUrl } from "@/lib/chain";
 
 type Props = {
   entitlementId: string;
   kind: string;
-  fulfillmentTxHash: string | null;
 };
 
-export function LibraryRowActions({ entitlementId, kind, fulfillmentTxHash }: Props) {
+export function LibraryRowActions({ entitlementId, kind }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,24 +33,6 @@ export function LibraryRowActions({ entitlementId, kind, fulfillmentTxHash }: Pr
           {busy ? "..." : "Download"}
         </button>
         {error && <p className="text-xs text-red-400">{error}</p>}
-      </div>
-    );
-  }
-
-  if (kind === "nft_native") {
-    return (
-      <div className="flex flex-col items-end gap-1">
-        {fulfillmentTxHash ? (
-          <Link
-            href={explorerTxUrl(fulfillmentTxHash)}
-            target="_blank"
-            className="btn-secondary"
-          >
-            View on chain
-          </Link>
-        ) : (
-          <span className="text-xs text-white/40">Mint pending</span>
-        )}
       </div>
     );
   }

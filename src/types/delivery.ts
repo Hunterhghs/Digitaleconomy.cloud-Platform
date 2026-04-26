@@ -90,15 +90,17 @@ export function encodeDeliveryConfig<K extends AssetKind>(
   return JSON.stringify(schema.parse(config));
 }
 
-// Human-friendly labels and CTA copy per kind.
+// Human-friendly labels and CTA copy per kind. v1.5 (nonprofit/free) ships
+// only `file`. The on-chain + paid kinds are kept in the type so the
+// dispatcher + DB stay forward-compatible for when they come back.
 export const KIND_META: Record<
   AssetKind,
   { label: string; cta: string; shipped: boolean }
 > = {
-  file: { label: "Downloadable file", cta: "Buy & Download", shipped: true },
-  nft_native: { label: "NFT", cta: "Mint to Wallet", shipped: true },
-  stream: { label: "Streaming content", cta: "Get Access", shipped: false },
-  license_key: { label: "License key", cta: "Buy & Activate", shipped: false },
-  ai_asset: { label: "AI asset", cta: "Buy & Run", shipped: false },
-  bundle: { label: "Bundle", cta: "Buy Bundle", shipped: false },
+  file: { label: "File", cta: "Download free", shipped: true },
+  nft_native: { label: "NFT", cta: "Coming back later", shipped: false },
+  stream: { label: "Stream", cta: "Coming soon", shipped: false },
+  license_key: { label: "License key", cta: "Coming soon", shipped: false },
+  ai_asset: { label: "AI asset", cta: "Coming soon", shipped: false },
+  bundle: { label: "Bundle", cta: "Coming soon", shipped: false },
 };

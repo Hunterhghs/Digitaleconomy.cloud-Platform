@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { formatUsd } from "@/lib/format";
 import { KindBadge } from "@/components/KindBadge";
-import { BuyPanel } from "@/components/BuyPanel";
+import { DownloadPanel } from "@/components/DownloadPanel";
 import {
   parseDeliveryConfig,
   KIND_META,
@@ -19,12 +18,15 @@ export default async function AssetDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const asset = await db.asset.findUnique({ where: { slug } });
+  const asset = await db.asset.findUnique({
+    where: { slug },
+    include: { uploader: { select: { id: true, name: true, email: true } } },
+  });
   if (!asset || asset.status !== "published") return notFound();
 
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
-  const alreadyOwns = userId
+  const alreadyClaimed = userId
     ? Boolean(
         await db.entitlement.findFirst({
           where: { userId, assetId: asset.id, revokedAt: null },
@@ -39,10 +41,7 @@ export default async function AssetDetailPage({
   try {
     if (asset.kind === "file") {
       const cfg = parseDeliveryConfig("file", asset.deliveryConfig);
-      configSummary = `${cfg.mimeType} - ${(cfg.fileSizeBytes / 1024).toFixed(0)} KB`;
-    } else if (asset.kind === "nft_native") {
-      const cfg = parseDeliveryConfig("nft_native", asset.deliveryConfig);
-      configSummary = `${cfg.tokenStandard.toUpperCase()} - max supply ${cfg.maxSupply}`;
+      configSummary = `${cfg.mimeType} - ${formatBytes(cfg.fileSizeBytes)}`;
     }
   } catch {
     configSummary = null;
@@ -68,6 +67,9 @@ export default async function AssetDetailPage({
             <span className="pill bg-white/5 text-white/60 border border-white/10">
               {asset.category}
             </span>
+            <span className="pill border border-emerald-400/30 bg-emerald-400/15 text-emerald-200">
+              Free
+            </span>
             {tags.map((t) => (
               <span key={t} className="pill bg-white/5 text-white/40 border border-white/10">
                 #{t}
@@ -75,57 +77,56 @@ export default async function AssetDetailPage({
             ))}
           </div>
           <h1 className="text-3xl font-semibold leading-tight">{asset.title}</h1>
-          <p className="text-sm text-white/50">by {asset.creatorName}</p>
+          <p className="text-sm text-white/50">
+            by {asset.creatorName}
+            {asset.uploader && (
+              <span className="text-white/30">
+                {" "}- uploaded by {asset.uploader.name ?? asset.uploader.email}
+              </span>
+            )}
+          </p>
         </div>
 
-        <div className="prose prose-invert max-w-none text-sm leading-relaxed text-white/80">
-          <p>{asset.description}</p>
+        <div className="prose prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed text-white/80">
+          {asset.description}
         </div>
 
         <div className="card grid grid-cols-2 gap-4 p-4 text-xs sm:grid-cols-4">
           <Detail label="Kind" value={meta.label} />
           <Detail label="License" value={asset.license} />
           {configSummary && <Detail label="Format" value={configSummary} />}
-          <Detail label="Status" value={asset.status} />
+          <Detail label="Downloads" value={asset.downloadCount.toLocaleString()} />
         </div>
       </div>
 
       <aside className="space-y-4">
-        <div className="card p-5">
-          <div className="text-xs uppercase tracking-wide text-white/40">Price</div>
-          <div className="text-3xl font-semibold">{formatUsd(asset.priceUsdCents)}</div>
-        </div>
-
-        {alreadyOwns ? (
-          <div className="card space-y-3 p-5">
-            <p className="text-sm text-emerald-300">You already own this.</p>
-            <Link href="/library" className="btn-primary w-full">Open in Library</Link>
-          </div>
+        {asset.kind === "file" ? (
+          <>
+            {alreadyClaimed && (
+              <div className="card p-4 text-sm text-emerald-200">
+                Already in your Library.{" "}
+                <Link href="/library" className="underline">Open Library →</Link>
+              </div>
+            )}
+            <DownloadPanel assetId={asset.id} isAuthenticated={Boolean(userId)} />
+          </>
         ) : (
-          <BuyPanel
-            assetId={asset.id}
-            assetSlug={asset.slug}
-            kind={asset.kind}
-            priceUsdCents={asset.priceUsdCents}
-            isAuthenticated={Boolean(userId)}
-          />
+          <div className="card space-y-2 p-5 text-sm text-white/60">
+            <p className="font-medium text-white/80">Not yet available</p>
+            <p>
+              The {meta.label.toLowerCase()} kind is reserved for a future phase.
+              Right now the platform ships the file kind only.
+            </p>
+          </div>
         )}
 
         <div className="card p-5 text-xs text-white/50">
-          <p className="font-medium text-white/70">What happens next</p>
-          {asset.kind === "file" ? (
-            <ul className="mt-2 list-disc space-y-1 pl-4">
-              <li>You get a download in your Library.</li>
-              <li>A receipt NFT is minted to your wallet as proof of license.</li>
-            </ul>
-          ) : asset.kind === "nft_native" ? (
-            <ul className="mt-2 list-disc space-y-1 pl-4">
-              <li>The NFT is minted directly to your wallet.</li>
-              <li>You can view it in your Library or on the explorer.</li>
-            </ul>
-          ) : (
-            <p className="mt-2">This asset kind is reserved for a future phase.</p>
-          )}
+          <p className="font-medium text-white/70">How it works</p>
+          <ul className="mt-2 list-disc space-y-1 pl-4">
+            <li>Click <span className="text-white/80">Download free</span> - the file is yours, no charge.</li>
+            <li>Sign in first to save it in your Library for re-downloads.</li>
+            <li>If you made this and shouldn&apos;t see it here, the admin can take it down.</li>
+          </ul>
         </div>
       </aside>
     </div>
@@ -139,4 +140,11 @@ function Detail({ label, value }: { label: string; value: string }) {
       <div className="font-medium">{value}</div>
     </div>
   );
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }

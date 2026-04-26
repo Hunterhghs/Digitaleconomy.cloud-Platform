@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: env.platform.name,
   description:
-    "Digitaleconomy.cloud - one home for files, NFTs, and every kind of digital asset. Pay with card or crypto.",
+    "Digitaleconomy.cloud - a free, nonprofit library of digital assets. Browse, download, share. No paywalls, no signup required to download.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
           <footer className="mx-auto max-w-6xl px-4 py-12 text-xs text-white/40">
-            {env.platform.name} - polymorphic asset model demo. v0.
+            {env.platform.name} - a nonprofit library of digital assets. Free
+            for everyone, forever (that&apos;s the goal anyway).
           </footer>
         </Providers>
       </body>

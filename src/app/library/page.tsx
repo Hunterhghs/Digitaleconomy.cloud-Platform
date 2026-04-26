@@ -4,8 +4,6 @@ import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { KindBadge } from "@/components/KindBadge";
 import { LibraryRowActions } from "./LibraryRowActions";
-import { explorerTxUrl } from "@/lib/chain";
-import { shortHash } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +23,15 @@ export default async function LibraryPage() {
       <div>
         <h1 className="text-2xl font-semibold">Your Library</h1>
         <p className="text-sm text-white/50">
-          Everything you own across every asset kind, in one place.
+          Every asset you&apos;ve grabbed while signed in. Re-download anytime.
         </p>
       </div>
 
       {entitlements.length === 0 ? (
         <div className="card p-8 text-center text-sm text-white/60">
-          You don&apos;t own any assets yet.{" "}
-          <Link href="/browse" className="text-accent-glow hover:underline">
-            Browse the catalog
+          Your library is empty.{" "}
+          <Link href="/browse" className="text-emerald-300 hover:underline">
+            Browse the library
           </Link>
           .
         </div>
@@ -48,26 +46,16 @@ export default async function LibraryPage() {
                 </div>
                 <Link
                   href={`/assets/${e.asset.slug}`}
-                  className="font-medium hover:text-accent-glow"
+                  className="font-medium hover:text-emerald-300"
                 >
                   {e.asset.title}
                 </Link>
-                <div className="text-xs text-white/40">by {e.asset.creatorName}</div>
-                {e.order.fulfillmentTxHash && (
-                  <Link
-                    href={explorerTxUrl(e.order.fulfillmentTxHash)}
-                    target="_blank"
-                    className="block font-mono text-[11px] text-white/40 hover:text-accent-glow"
-                  >
-                    tx {shortHash(e.order.fulfillmentTxHash)}
-                  </Link>
-                )}
+                <div className="text-xs text-white/40">
+                  by {e.asset.creatorName} - saved{" "}
+                  {e.grantedAt.toISOString().slice(0, 10)}
+                </div>
               </div>
-              <LibraryRowActions
-                entitlementId={e.id}
-                kind={e.asset.kind}
-                fulfillmentTxHash={e.order.fulfillmentTxHash}
-              />
+              <LibraryRowActions entitlementId={e.id} kind={e.asset.kind} />
             </div>
           ))}
         </div>

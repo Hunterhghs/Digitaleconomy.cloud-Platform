@@ -6,37 +6,44 @@ import { env } from "@/lib/env";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const featured = await db.asset.findMany({
-    where: { status: "published" },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
+  const [featured, totalAssets] = await Promise.all([
+    db.asset.findMany({
+      where: { status: "published" },
+      orderBy: [{ downloadCount: "desc" }, { createdAt: "desc" }],
+      take: 8,
+    }),
+    db.asset.count({ where: { status: "published" } }),
+  ]);
 
   return (
     <div className="space-y-12">
       <section className="space-y-6">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-widest text-accent-glow">
-            Polymorphic asset model
+          <p className="text-xs uppercase tracking-widest text-emerald-300">
+            Free for everyone &middot; Open to anyone
           </p>
           <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-            One platform for every kind of digital asset.
+            A nonprofit home for digital assets.
           </h1>
           <p className="max-w-2xl text-white/60">
-            {env.platform.name} sells downloadable files, true on-chain NFTs, and
-            (soon) streaming content, license keys, and AI assets - all from the
-            same storefront. Pay with a debit card or your crypto wallet.
+            {env.platform.name} is a free library of digital things people make -
+            templates, art, audio loops, code, ebooks, 3D models. Anyone can
+            download. Sign up and you can share your own work too. No paywalls,
+            no upsells, no crypto wallet required.
           </p>
-          <div className="flex gap-3 pt-2">
-            <Link href="/browse" className="btn-primary">Browse the catalog</Link>
-            <Link href="/browse?kind=nft_native" className="btn-secondary">See the NFTs</Link>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Link href="/browse" className="btn-primary">Browse the library</Link>
+            <Link href="/login?next=/upload" className="btn-secondary">Share something</Link>
           </div>
+          <p className="pt-1 text-xs text-white/40">
+            {totalAssets.toLocaleString()} {totalAssets === 1 ? "asset" : "assets"} available - all free.
+          </p>
         </div>
       </section>
 
       <section className="space-y-4">
         <div className="flex items-end justify-between">
-          <h2 className="text-xl font-semibold">Featured</h2>
+          <h2 className="text-xl font-semibold">Most downloaded</h2>
           <Link href="/browse" className="text-sm text-white/60 hover:text-white">
             See all →
           </Link>
@@ -54,16 +61,16 @@ export default async function HomePage() {
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Pillar
-          title="One catalog, many kinds"
-          body="Files, NFTs, streams, license keys - same checkout, same library, same provenance layer."
+          title="Free, no account needed"
+          body="Anyone can download anything in the library. Sign in only if you want to publish or build a saved collection."
         />
         <Pillar
-          title="Dual-rail checkout"
-          body="Pay with Stripe (debit/credit) or with USDC on Base. Buyers never have to touch crypto."
+          title="Anyone can share"
+          body="Create an account, upload a file, give it a title and a license. That's it - your asset is live."
         />
         <Pillar
-          title="On-chain provenance"
-          body="Every purchase produces an on-chain record. For NFTs, the asset itself is the token; for files, a receipt NFT proves the license."
+          title="Built to grow"
+          body="Today: free downloads. Soon: streaming, NFT-backed provenance for creators, more asset kinds. Same library."
         />
       </section>
     </div>
@@ -82,10 +89,13 @@ function Pillar({ title, body }: { title: string; body: string }) {
 function EmptyCatalog() {
   return (
     <div className="card p-8 text-center text-sm text-white/60">
-      <p>No assets yet. Run the seed script:</p>
-      <pre className="mt-3 inline-block rounded bg-white/5 px-3 py-2 text-xs">
-        npm run db:seed
-      </pre>
+      <p>The library is empty right now.</p>
+      <p className="mt-2">
+        <Link href="/login?next=/upload" className="text-emerald-300 hover:underline">
+          Sign in and be the first to share something
+        </Link>
+        .
+      </p>
     </div>
   );
 }

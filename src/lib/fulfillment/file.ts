@@ -1,10 +1,12 @@
 import { db } from "../db";
+import { env } from "../env";
 import { mintReceipt } from "../relayer";
 import { parseDeliveryConfig } from "@/types/delivery";
 import type { FulfillmentHandler } from "./types";
 
-// kind=file: create an Entitlement + DownloadGrant, then mint a ReceiptNFT
-// in the background so the buyer has portable proof of purchase.
+// kind=file: create an Entitlement + DownloadGrant. In the paid/on-chain
+// model this also mints a ReceiptNFT; in the nonprofit/free model
+// (CHAIN_ENABLED=false) the mint is skipped entirely.
 export const fileHandler: FulfillmentHandler = {
   kind: "file",
   shipped: true,
@@ -19,12 +21,20 @@ export const fileHandler: FulfillmentHandler = {
         kind: "file",
         downloadGrant: {
           create: {
-            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1y
-            maxDownloads: 50,
+            expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+            maxDownloads: 9999,
           },
         },
       },
     });
+
+    if (!env.chain.enabled) {
+      return {
+        fulfillmentTxHash: null,
+        receiptTokenId: null,
+        notes: `Granted entitlement ${entitlement.id} (free download, no on-chain receipt)`,
+      };
+    }
 
     const mint = await mintReceipt({
       to: recipientAddress,
@@ -42,7 +52,7 @@ export const fileHandler: FulfillmentHandler = {
     return {
       fulfillmentTxHash: mint.txHash,
       receiptTokenId: mint.tokenId,
-      notes: `Granted entitlement ${entitlement.id}; ${mint.simulated ? "simulated" : "on-chain"} receipt mint`,
+      notes: `Granted entitlement ${entitlement.id}; on-chain receipt minted`,
     };
   },
 };

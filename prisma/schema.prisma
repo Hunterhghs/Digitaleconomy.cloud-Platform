@@ -24,6 +24,7 @@ model User {
   orders                 Order[]
   entitlements           Entitlement[]
   adminActions           AdminAction[]
+  uploadedAssets         Asset[]       @relation("UploadedAssets")
 }
 
 // Polymorphic Asset row. The `kind` discriminator tells the dispatcher which
@@ -54,19 +55,33 @@ model Asset {
   // ReceiptNFT mapping (null for kind="nft_native" because the NFT IS the asset).
   receiptTokenId String?
 
+  // Nullable: null for platform-seeded assets; set for user-uploaded assets.
+  uploaderUserId String?
+  uploader       User?   @relation("UploadedAssets", fields: [uploaderUserId], references: [id])
+
+  // Cumulative downloads (anonymous + authenticated). Used for sorting +
+  // analytics on creator dashboards.
+  downloadCount  Int     @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   orders       Order[]
   entitlements Entitlement[]
+
+  @@index([uploaderUserId])
 }
 
+// In the nonprofit/free model an Order is a "claim" - a record that a signed-in
+// user grabbed an asset. Anonymous downloads do NOT create Orders; they go
+// through /api/claim straight to a signed URL. paymentRail="free" + amount=0
+// for v1.5; the Stripe/crypto fields stay around for when paid kinds return.
 model Order {
   id                String   @id @default(cuid())
   userId            String
   assetId           String
-  paymentRail       String   // "stripe" | "crypto"
-  amountUsdCents    Int
+  paymentRail       String   @default("free") // "free" | "stripe" | "crypto"
+  amountUsdCents    Int      @default(0)
   stripeSessionId   String?
   cryptoTxHash      String?
   fulfillmentTxHash String?  // mint or transfer tx (if any)

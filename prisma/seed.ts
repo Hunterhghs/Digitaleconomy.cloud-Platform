@@ -30,262 +30,153 @@ async function upsertAdmin() {
       passwordHash,
       name: "Platform Admin",
       role: "admin",
-      custodialWalletAddress: `0xadmin${"0".repeat(35)}`,
     },
   });
 }
 
-type SeedAsset = {
+type FileSeed = {
   slug: string;
   title: string;
-  description: string;
+  creator: string;
   category: string;
-  tagsCsv: string;
-  priceUsdCents: number;
-  creatorName: string;
+  tags: string;
+  description: string;
+  fileName: string;
+  mimeType: string;
+  body: string;
   license: string;
-  previewUrl: string | null;
-  kind: "file" | "nft_native";
-  deliveryConfig: ReturnType<typeof encodeDeliveryConfig>;
 };
 
-function buildAssets(): SeedAsset[] {
-  const assets: SeedAsset[] = [];
-
-  const fileSeeds: Array<{
-    slug: string;
-    title: string;
-    creator: string;
-    category: string;
-    tags: string;
-    priceUsdCents: number;
-    description: string;
-    fileName: string;
-    mimeType: string;
-    body: string;
-  }> = [
+function buildAssets(): FileSeed[] {
+  return [
     {
       slug: "neon-grid-textures-pack",
       title: "Neon Grid Textures Pack",
       creator: "Vector Atelier",
       category: "Images",
-      tags: "neon,grid,texture,vector",
-      priceUsdCents: 1499,
+      tags: "neon,grid,texture,vector,background",
       description:
-        "16 high-resolution neon grid textures, perfect for product UI mockups, music covers, and motion design backplates.",
+        "16 high-resolution neon grid textures, perfect for product UI mockups, music covers, and motion design backplates. Free to use - attribution appreciated but not required.",
       fileName: "neon-grid-textures.txt",
       mimeType: "application/zip",
       body: "Demo placeholder for neon-grid-textures.zip\n",
+      license: "cc-by",
     },
     {
       slug: "lo-fi-study-loops-vol-2",
       title: "Lo-fi Study Loops Vol. 2",
       creator: "Brick Studios",
       category: "Audio",
-      tags: "lo-fi,beats,loops,wav",
-      priceUsdCents: 999,
+      tags: "lo-fi,beats,loops,wav,music",
       description:
-        "30 hand-crafted lo-fi loops + drum stems. Royalty-free for personal projects; commercial license available on request.",
+        "30 hand-crafted lo-fi loops + drum stems. Use them in your videos, study playlists, or DJ sets - no charge, no signup.",
       fileName: "lofi-loops-vol2.txt",
       mimeType: "audio/wav",
       body: "Demo placeholder for lofi-loops-vol2.wav\n",
+      license: "cc-by",
     },
     {
       slug: "interface-icon-set-200",
       title: "Interface Icon Set (200 SVGs)",
       creator: "Pixel Cartel",
       category: "UI Kits",
-      tags: "icons,svg,ui,design",
-      priceUsdCents: 2499,
+      tags: "icons,svg,ui,design,interface",
       description:
-        "200 pixel-perfect SVG icons across navigation, commerce, communication, and finance categories. MIT-style license included.",
+        "200 pixel-perfect SVG icons across navigation, commerce, communication, and finance categories. MIT-licensed and free to drop into any project.",
       fileName: "icon-set-200.txt",
       mimeType: "application/zip",
       body: "Demo placeholder for icon-set-200.zip\n",
+      license: "mit",
     },
     {
       slug: "blender-isometric-room",
       title: "Blender Isometric Room (.blend)",
       creator: "Cube Workshop",
       category: "3D",
-      tags: "blender,3d,isometric,scene",
-      priceUsdCents: 1899,
+      tags: "blender,3d,isometric,scene,model",
       description:
-        "A fully rigged Blender scene of a cozy isometric room. Materials, lights, and camera presets included.",
+        "A fully rigged Blender scene of a cozy isometric room. Materials, lights, and camera presets included. Use it for renders, learning, or as a starting scene.",
       fileName: "iso-room.txt",
       mimeType: "application/x-blender",
       body: "Demo placeholder for iso-room.blend\n",
+      license: "cc-by",
     },
     {
       slug: "next-saas-starter-template",
       title: "Next.js SaaS Starter Template",
       creator: "Indie Foundry",
       category: "Code",
-      tags: "next.js,saas,template,typescript",
-      priceUsdCents: 4900,
+      tags: "next.js,saas,template,typescript,starter",
       description:
-        "Production-ready Next.js + Postgres + Stripe SaaS starter with auth, billing, and dashboards. MIT license, lifetime updates.",
+        "Production-shaped Next.js + Postgres + Auth.js SaaS starter with sensible defaults. MIT-licensed - clone, ship, contribute back.",
       fileName: "next-saas-starter.txt",
       mimeType: "application/zip",
       body: "Demo placeholder for next-saas-starter.zip\n",
+      license: "mit",
     },
     {
       slug: "founder-handbook-2026",
       title: "The Founder Handbook 2026 (eBook)",
       creator: "Mara Cohen",
       category: "eBooks",
-      tags: "ebook,startup,founder",
-      priceUsdCents: 1500,
+      tags: "ebook,startup,founder,pdf,reading",
       description:
-        "300 pages of practical advice on shipping, hiring, fundraising, and avoiding the avoidable. PDF + ePub.",
+        "300 pages of practical advice on shipping, hiring, fundraising, and avoiding the avoidable. Originally a paid ebook - now released for free as a community contribution.",
       fileName: "founder-handbook.txt",
       mimeType: "application/pdf",
       body: "Demo placeholder for founder-handbook.pdf\n",
+      license: "cc-by-nc",
     },
   ];
-
-  for (const f of fileSeeds) {
-    const size = writeSampleFile(f.fileName, f.body);
-    assets.push({
-      slug: f.slug,
-      title: f.title,
-      description: f.description,
-      category: f.category,
-      tagsCsv: f.tags,
-      priceUsdCents: f.priceUsdCents,
-      creatorName: f.creator,
-      license: "personal",
-      previewUrl: null,
-      kind: "file",
-      deliveryConfig: encodeDeliveryConfig("file", {
-        fileKey: f.fileName,
-        fileSizeBytes: size,
-        mimeType: f.mimeType,
-      }),
-    });
-  }
-
-  const nftSeeds: Array<{
-    slug: string;
-    title: string;
-    creator: string;
-    category: string;
-    tags: string;
-    priceUsdCents: number;
-    description: string;
-    contract: string;
-    tokenId: number;
-    maxSupply: number;
-    metadataUri: string;
-  }> = [
-    {
-      slug: "harbor-lights-edition",
-      title: "Harbor Lights (Edition of 250)",
-      creator: "Renee Park",
-      category: "Art",
-      tags: "art,collectible,erc-1155,limited",
-      priceUsdCents: 7500,
-      description:
-        "An ERC-1155 limited edition photographic NFT. The token IS the asset; minted directly to your wallet at checkout.",
-      contract: "0xNATIVE000000000000000000000000000000000A",
-      tokenId: 1,
-      maxSupply: 250,
-      metadataUri: "ipfs://placeholder/harbor-lights/1",
-    },
-    {
-      slug: "open-genesis-loop",
-      title: "Open Genesis Loop",
-      creator: "DAO Synth Co.",
-      category: "Music",
-      tags: "music,loop,nft,collectible",
-      priceUsdCents: 4500,
-      description:
-        "A 16-bar generative music loop minted as an open-edition NFT. Hold it, remix it, build on it.",
-      contract: "0xNATIVE000000000000000000000000000000000A",
-      tokenId: 2,
-      maxSupply: 10000,
-      metadataUri: "ipfs://placeholder/open-genesis/2",
-    },
-    {
-      slug: "founders-pass-001",
-      title: "Founders Pass 001",
-      creator: "Digitaleconomy.cloud",
-      category: "Membership",
-      tags: "pass,founder,nft",
-      priceUsdCents: 12000,
-      description:
-        "A founding-member NFT for the platform. Holders get early access to new asset kinds and creator drops.",
-      contract: "0xNATIVE000000000000000000000000000000000A",
-      tokenId: 3,
-      maxSupply: 500,
-      metadataUri: "ipfs://placeholder/founders-pass/3",
-    },
-  ];
-
-  for (const n of nftSeeds) {
-    assets.push({
-      slug: n.slug,
-      title: n.title,
-      description: n.description,
-      category: n.category,
-      tagsCsv: n.tags,
-      priceUsdCents: n.priceUsdCents,
-      creatorName: n.creator,
-      license: "nft-license-1.0",
-      previewUrl: null,
-      kind: "nft_native",
-      deliveryConfig: encodeDeliveryConfig("nft_native", {
-        contractAddress: n.contract,
-        tokenStandard: "erc1155",
-        maxSupply: n.maxSupply,
-        metadataUri: n.metadataUri,
-        tokenIdSeed: n.tokenId,
-      }),
-    });
-  }
-
-  return assets;
 }
 
 async function main() {
   console.log("Seeding database...");
-  await upsertAdmin();
+  const admin = await upsertAdmin();
   console.log(`  admin: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
 
   const seeds = buildAssets();
-  for (const s of seeds) {
+  for (const f of seeds) {
+    const size = writeSampleFile(f.fileName, f.body);
+    const deliveryConfig = encodeDeliveryConfig("file", {
+      fileKey: f.fileName,
+      fileSizeBytes: size,
+      mimeType: f.mimeType,
+    });
     await prisma.asset.upsert({
-      where: { slug: s.slug },
+      where: { slug: f.slug },
       update: {
-        title: s.title,
-        description: s.description,
-        category: s.category,
-        tagsCsv: s.tagsCsv,
-        priceUsdCents: s.priceUsdCents,
-        creatorName: s.creatorName,
-        license: s.license,
-        previewUrl: s.previewUrl,
-        kind: s.kind,
-        deliveryConfig: s.deliveryConfig,
+        title: f.title,
+        description: f.description,
+        category: f.category,
+        tagsCsv: f.tags,
+        priceUsdCents: 0,
+        creatorName: f.creator,
+        license: f.license,
+        previewUrl: null,
+        kind: "file",
+        deliveryConfig,
         status: "published",
+        uploaderUserId: admin.id,
       },
       create: {
-        slug: s.slug,
-        title: s.title,
-        description: s.description,
-        category: s.category,
-        tagsCsv: s.tagsCsv,
-        priceUsdCents: s.priceUsdCents,
-        creatorName: s.creatorName,
-        license: s.license,
-        previewUrl: s.previewUrl,
-        kind: s.kind,
-        deliveryConfig: s.deliveryConfig,
+        slug: f.slug,
+        title: f.title,
+        description: f.description,
+        category: f.category,
+        tagsCsv: f.tags,
+        priceUsdCents: 0,
+        creatorName: f.creator,
+        license: f.license,
+        previewUrl: null,
+        kind: "file",
+        deliveryConfig,
         status: "published",
+        uploaderUserId: admin.id,
       },
     });
   }
-  console.log(`  assets: ${seeds.length} (${seeds.filter((s) => s.kind === "file").length} files, ${seeds.filter((s) => s.kind === "nft_native").length} NFTs)`);
+  console.log(`  assets: ${seeds.length} free downloads, all attributed to ${admin.email}`);
   console.log("Done.");
 }
 
