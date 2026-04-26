@@ -1,13 +1,17 @@
 // Digitaleconomy.cloud - polymorphic digital asset platform schema.
-// Local dev uses SQLite; for production switch the provider to "postgresql"
-// and update DATABASE_URL.
+//
+// Postgres-only. Vercel + Neon (free tier) is the recommended setup:
+//   DATABASE_URL  = pooled connection (POSTGRES_PRISMA_URL on Vercel)
+//   DIRECT_URL    = direct/unpooled connection (POSTGRES_URL_NON_POOLING)
+// Locally you can use the same Neon URLs, or run Postgres in Docker.
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -35,8 +39,8 @@ model Asset {
   title         String
   description   String
   category      String
-  tagsCsv       String   @default("") // SQLite has no array; CSV for v1
-  priceUsdCents Int
+  tagsCsv       String   @default("") // CSV for v1; can migrate to String[] later
+  priceUsdCents Int      @default(0)
   kind          String   // "file" | "nft_native" | "stream" | "license_key" | "ai_asset" | "bundle"
   previewUrl    String?
   creatorName   String
@@ -50,7 +54,7 @@ model Asset {
   //   stream      -> { playbackId, drm }
   //   license_key -> { keyPoolId, activationEndpoint }
   //   ai_asset    -> { fileKey, usageScopes }
-  deliveryConfig String // JSON-encoded; SQLite-friendly. Postgres can use Json.
+  deliveryConfig String // JSON-encoded text. Kept as String for cross-DB ergonomics.
 
   // ReceiptNFT mapping (null for kind="nft_native" because the NFT IS the asset).
   receiptTokenId String?

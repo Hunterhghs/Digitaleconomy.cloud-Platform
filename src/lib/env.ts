@@ -1,10 +1,24 @@
-// Centralized env access with safe defaults so the platform runs end-to-end
-// without any external service credentials configured.
+// Centralized env access with safe defaults. The platform should run with the
+// minimum: DATABASE_URL + AUTH_SECRET. Everything else has sane fallbacks.
+
+const isVercel = process.env.VERCEL === "1";
+const explicitUploadsEnabled = process.env.UPLOADS_ENABLED;
+
+// Uploads need a writable filesystem (local-fs driver) OR object storage.
+// Auto-disable on Vercel because its serverless filesystem is read-only and
+// we haven't wired up Vercel Blob / R2 yet. Override with UPLOADS_ENABLED=true
+// once a writable storage driver is configured.
+function uploadsEnabled(): boolean {
+  if (explicitUploadsEnabled === "true") return true;
+  if (explicitUploadsEnabled === "false") return false;
+  return !isVercel;
+}
 
 export const env = {
-  databaseUrl: process.env.DATABASE_URL ?? "file:./dev.db",
+  databaseUrl: process.env.DATABASE_URL ?? "",
   authSecret: process.env.AUTH_SECRET ?? "dev-secret",
   appUrl: process.env.NEXTAUTH_URL ?? "http://localhost:3000",
+  isVercel,
 
   storage: {
     driver: (process.env.STORAGE_DRIVER ?? "local") as "local" | "s3",
@@ -27,6 +41,7 @@ export const env = {
   },
 
   uploads: {
+    enabled: uploadsEnabled(),
     maxBytes: Number(process.env.UPLOAD_MAX_BYTES ?? 50 * 1024 * 1024), // 50 MB
   },
 

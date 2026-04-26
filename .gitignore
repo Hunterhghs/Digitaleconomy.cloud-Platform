@@ -9,7 +9,16 @@ dist
 next-env.d.ts
 prisma/dev.db
 prisma/dev.db-journal
+# Local user uploads stay out of the repo, but the seed-asset placeholder
+# files (committed below) ship with the bundle so the public catalog has
+# something to download in production.
 storage/local/*
 !storage/local/.keep
+!storage/local/founder-handbook.txt
+!storage/local/icon-set-200.txt
+!storage/local/iso-room.txt
+!storage/local/lofi-loops-vol2.txt
+!storage/local/neon-grid-textures.txt
+!storage/local/next-saas-starter.txt
 .DS_Store
 .vercel

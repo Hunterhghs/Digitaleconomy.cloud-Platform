@@ -14,6 +14,7 @@ export default async function HomePage() {
     }),
     db.asset.count({ where: { status: "published" } }),
   ]);
+  const uploadsOn = env.uploads.enabled;
 
   return (
     <div className="space-y-12">
@@ -28,15 +29,18 @@ export default async function HomePage() {
           <p className="max-w-2xl text-white/60">
             {env.platform.name} is a free library of digital things people make -
             templates, art, audio loops, code, ebooks, 3D models. Anyone can
-            download. Sign up and you can share your own work too. No paywalls,
-            no upsells, no crypto wallet required.
+            download. {uploadsOn && "Sign up and you can share your own work too. "}
+            No paywalls, no upsells, no crypto wallet required.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Link href="/browse" className="btn-primary">Browse the library</Link>
-            <Link href="/login?next=/upload" className="btn-secondary">Share something</Link>
+            {uploadsOn && (
+              <Link href="/login?next=/upload" className="btn-secondary">Share something</Link>
+            )}
           </div>
           <p className="pt-1 text-xs text-white/40">
             {totalAssets.toLocaleString()} {totalAssets === 1 ? "asset" : "assets"} available - all free.
+            {!uploadsOn && " Creator uploads coming soon."}
           </p>
         </div>
       </section>

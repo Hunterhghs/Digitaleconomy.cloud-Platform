@@ -23,12 +23,17 @@ a rewrite.
 | Payments | _none — everything is free_ | Stripe + USDC on Base (code dormant) |
 | On-chain receipts | _disabled_ | Mint a `ReceiptNFT1155` per claim when `CHAIN_ENABLED=true` |
 
-## Quick start
+## Quick start (local)
+
+The platform is now Postgres-only. Easiest local DB: spin up a free Neon
+project at https://neon.tech (takes ~30s), copy its pooled + direct
+connection strings, and:
 
 ```bash
 cp .env.example .env
+# paste the Neon URLs into DATABASE_URL + DIRECT_URL in .env
 npm install
-npm run db:push    # creates SQLite db at prisma/dev.db
+npm run db:push    # apply schema to the Postgres DB
 npm run db:seed    # admin user + 6 free sample assets
 npm run dev
 ```
@@ -42,6 +47,41 @@ Visit `http://localhost:3000`.
 - **Admin** at `/admin` shows uploads, total downloads, and a takedown
   workflow for the moderation queue.
 
+## Deploy to Vercel + Neon (production)
+
+Currently deployed at: https://digitaleconomy-cloud-platform.vercel.app
+
+```text
+1. Vercel dashboard -> your project -> Storage tab -> Create database
+   -> Postgres (powered by Neon) -> Connect to project. This auto-injects
+   POSTGRES_PRISMA_URL + POSTGRES_URL_NON_POOLING into the env.
+
+2. Vercel dashboard -> Settings -> Environment Variables, add:
+     DATABASE_URL  =  (paste value of POSTGRES_PRISMA_URL)
+     DIRECT_URL    =  (paste value of POSTGRES_URL_NON_POOLING)
+     AUTH_SECRET   =  (run `openssl rand -base64 32`)
+
+3. Locally, point at the same Neon DB and seed it:
+     export DATABASE_URL="..."   # the pooled URL
+     export DIRECT_URL="..."     # the direct URL
+     npx prisma db push          # creates the tables
+     npm run db:seed             # inserts admin + 6 sample assets
+
+4. Push to main (or hit Redeploy in Vercel) and the read-only library
+   is live - browse, search, asset detail, library, admin all work.
+```
+
+### Uploads on Vercel
+
+Uploads are auto-disabled on Vercel because Vercel's serverless filesystem
+is read-only. The /upload page shows a "coming soon" message and the
+/api/upload endpoint returns 503.
+
+To turn uploads back on, wire up object storage and set
+`UPLOADS_ENABLED=true`. Recommended: Vercel Blob (zero config, free tier)
+or Cloudflare R2. Implementation TODO is in [src/lib/storage.ts](src/lib/storage.ts)
+and [src/app/api/upload/route.ts](src/app/api/upload/route.ts).
+
 ## What works out of the box (no external services required)
 
 The platform is designed so the **full flow runs locally with zero external
@@ -49,10 +89,10 @@ service credentials**.
 
 | Concern | Local default | Production swap |
 | --- | --- | --- |
-| DB | SQLite (`prisma/dev.db`) | Postgres — change `provider` in [prisma/schema.prisma](prisma/schema.prisma) and `DATABASE_URL` |
+| DB | Postgres (Neon free tier recommended for both local + prod) | — |
 | Auth | Email + password (Credentials provider) | Email magic-link or SIWE — see [src/lib/auth.ts](src/lib/auth.ts) |
-| File storage | Local filesystem (`storage/local/`) signed via HMAC | R2 / S3 with presigned URLs — see [src/lib/storage.ts](src/lib/storage.ts) |
-| Uploads | Multipart → local FS | Same flow, swap storage driver to S3/R2 |
+| File storage | Local filesystem (`storage/local/`) signed via HMAC | R2 / S3 / Vercel Blob — see [src/lib/storage.ts](src/lib/storage.ts) |
+| Uploads | Multipart → local FS (auto-disabled on Vercel) | Wire object storage + set `UPLOADS_ENABLED=true` |
 | On-chain mint (dormant) | No-op when `CHAIN_ENABLED=false` (default) | `writeContract` against deployed `ReceiptNFT1155` when `CHAIN_ENABLED=true` |
 
 ## Architecture at a glance

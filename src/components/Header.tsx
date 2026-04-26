@@ -8,6 +8,7 @@ export async function Header() {
   const user = session?.user as
     | { id?: string; email?: string; role?: string }
     | undefined;
+  const uploadsOn = env.uploads.enabled;
   return (
     <header className="sticky top-0 z-30 border-b border-white/5 bg-ink/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -20,8 +21,8 @@ export async function Header() {
           </Link>
           <nav className="hidden gap-4 text-sm text-white/70 md:flex">
             <Link href="/browse" className="hover:text-white">Browse</Link>
-            {user && <Link href="/upload" className="hover:text-white">Upload</Link>}
-            {user && <Link href="/my/uploads" className="hover:text-white">My uploads</Link>}
+            {user && uploadsOn && <Link href="/upload" className="hover:text-white">Upload</Link>}
+            {user && uploadsOn && <Link href="/my/uploads" className="hover:text-white">My uploads</Link>}
             {user && <Link href="/library" className="hover:text-white">Library</Link>}
             {user?.role === "admin" && (
               <Link href="/admin" className="hover:text-white">Admin</Link>
@@ -31,19 +32,16 @@ export async function Header() {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <Link href="/upload" className="btn-primary hidden sm:inline-flex">
-                + Upload
-              </Link>
+              {uploadsOn && (
+                <Link href="/upload" className="btn-primary hidden sm:inline-flex">
+                  + Upload
+                </Link>
+              )}
               <span className="hidden text-xs text-white/50 sm:inline">{user.email}</span>
               <LogoutButton />
             </>
           ) : (
-            <>
-              <Link href="/login?next=/upload" className="hidden text-sm text-white/60 hover:text-white sm:inline">
-                Share something
-              </Link>
-              <Link href="/login" className="btn-secondary">Sign in</Link>
-            </>
+            <Link href="/login" className="btn-secondary">Sign in</Link>
           )}
         </div>
       </div>

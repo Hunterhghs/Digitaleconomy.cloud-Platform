@@ -41,6 +41,16 @@ function extOf(name: string) {
 }
 
 export async function POST(req: Request) {
+  if (!env.uploads.enabled) {
+    return NextResponse.json(
+      {
+        error:
+          "Uploads aren't enabled on this deployment yet. The platform admin needs to wire up object storage (Vercel Blob, Cloudflare R2, or S3) before uploads can be turned back on.",
+      },
+      { status: 503 },
+    );
+  }
+
   const user = await requireUser();
   if (!user) {
     return NextResponse.json({ error: "Sign in first" }, { status: 401 });
